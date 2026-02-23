@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Game Vault</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        header { text-align: center; margin-bottom: 40px; }
+        h1 span { color: var(--accent); }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .game-card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+        .game-info { padding: 12px; text-align: center; }
+        .game-info h3 { margin: 0; font-size: 0.95rem; }
+
+        /* --- THEATER MODE (iPad Logic) --- */
+        #gameOverlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            display: none;
+            z-index: 9999;
+            overflow: hidden; 
+        }
+
+        .iframe-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* For iPad, we use 100% plus a small buffer, then clip the bottom */
+            height: 100%;
+            padding-bottom: env(safe-area-inset-bottom); /* iPad home bar protection */
+        }
+
+        #gameFrame {
+            width: 100%;
+            /* We make the iframe height large enough to push the miniplay bar down */
+            height: calc(100% + 55px); 
+            border: none;
+            display: block;
+            margin-top: 0;
+            /* Re-aligned margin to ensure the bottom of the game isn't cut */
+            margin-bottom: -55px;
+            transition: transform 0.3s ease;
+            transform-origin: center top;
+        }
+
+        /* --- DROPDOWN MENU --- */
+        .menu-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10005;
+        }
+
+        .menu-btn {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            top: 55px;
+            right: 0;
+            background: #1e293b;
+            border-radius: 12px;
+            width: 200px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .dropdown-content.show { display: flex; }
+
+        .dropdown-item {
+            padding: 14px 18px;
+            color: white;
+            border: none;
+            background: none;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover { background: #334155; }
+        .dropdown-item i { color: var(--accent); }
+        .dropdown-item.danger:hover { background: #ef4444; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Games ni <span>Rhyane Sexy ulala</span></h1>
+    </header>
+
+    <main class="library-grid">
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papa-s-freezeria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzVF5tY4tK4ckkaVIQCbPJ1rA7FIZmxEPXmg&s" alt="Freezeria">
+            <div class="game-info"><h3>Papa's Freezeria</h3></div>
+        </div>
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papa-s-wingeria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQG3zqMeB9MYfqQRKKpcEYC-pvbxgGCkfbUOA&s" alt="Wingeria">
+            <div class="game-info"><h3>Papa's Wingeria</h3></div>
+        </div>
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papas-pastaria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSA08oPHml9DPXSe7OQTkUH96ir81aIaYaveQ&s" alt="Pastaria">
+            <div class="game-info"><h3>Papa's Pastaria</h3></div>
+        </div>
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papas-cupcakeria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNirVWa-ZaDGdHQaI5nr2i1w5NJjk3p6eh6A&s" alt="Cupcakeria">
+            <div class="game-info"><h3>Papa's Cupcakeria</h3></div>
+        </div>
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papas-scooperia')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUp1_3nxBnK37To5B-iniuC0tcyANCYdcIgg&s" alt="Scooperia">
+            <div class="game-info"><h3>Papa's Scooperia</h3></div>
+        </div>
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papa-s-hot-doggeria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFTlfKZQmXiwBSqpJuEcAIMgGCktqluwV7Jg&s" alt="Hot Doggeria">
+            <div class="game-info"><h3>Papa's Hot Doggeria</h3></div>
+        </div>
+
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papa-s-sushiria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRewYqCMxMZDZjG_VwWCoFgyJqWau26U5KMHw&s" alt="Sushiria">
+            <div class="game-info"><h3>Papa's Sushiria</h3></div>
+        </div>
+
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papa-s-taco-mia')">
+            <img src="https://m.media-amazon.com/images/I/81OmPD-sGVL.jpg" alt="Taco Mia">
+            <div class="game-info"><h3>Papa's Taco Mia</h3></div>
+        </div>
+
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papas-bakeria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1uuQ0EtC_UCRKM8gBmIisVB4AP9a1ty8L7Q&s" alt="Bakeria">
+            <div class="game-info"><h3>Papa's Bakeria</h3></div>
+        </div>
+
+        <div class="game-card" onclick="launchGame('https://www.miniplay.com/embed/papas-cheeseria')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6wtPAppTzjhwf4ifu4temqKjMo80P0jYLOA&s" alt="Cheeseria">
+            <div class="game-info"><h3>Papa's Cheeseria</h3></div>
+        </div>
+    </main>
+
+    <div id="gameOverlay">
+        <div class="menu-container">
+            <button class="menu-btn" onclick="toggleMenu()">
+                <i class="bi bi-list"></i>
+            </button>
+            <div id="gameDropdown" class="dropdown-content">
+                <button class="dropdown-item" onclick="toggleFullscreen()">
+                    <i class="bi bi-arrows-fullscreen"></i> Fullscreen
+                </button>
+                <button class="dropdown-item" id="stretchBtn" onclick="toggleStretch()">
+                    <i class="bi bi-arrows-expand"></i> Stretch Sides
+                </button>
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 0;">
+                <button class="dropdown-item danger" onclick="closeGame()">
+                    <i class="bi bi-power"></i> Exit Game
+                </button>
+            </div>
+        </div>
+
+        <div class="iframe-container">
+            <iframe id="gameFrame" src="" sandbox="allow-scripts allow-same-origin allow-forms" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <script>
+        const overlay = document.getElementById('gameOverlay');
+        const frame = document.getElementById('gameFrame');
+        const dropdown = document.getElementById('gameDropdown');
+        let isExpanded = false;
+
+        function launchGame(url) {
+            frame.src = url;
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            // iPad Safari requires user interaction to enter Fullscreen properly
+            if (overlay.requestFullscreen) {
+                overlay.requestFullscreen().catch(err => {
+                    console.log("Auto-fullscreen blocked, menu option available.");
+                });
+            }
+        }
+
+        function toggleMenu() { dropdown.classList.toggle('show'); }
+
+        function toggleStretch() {
+            isExpanded = !isExpanded;
+            const stretchBtn = document.getElementById('stretchBtn');
+            if (isExpanded) {
+                frame.style.transform = "scaleX(1.10)"; 
+                stretchBtn.innerHTML = '<i class="bi bi-arrows-collapse"></i> Reset Sides';
+            } else {
+                frame.style.transform = "scaleX(1)";
+                stretchBtn.innerHTML = '<i class="bi bi-arrows-expand"></i> Stretch Sides';
+            }
+            dropdown.classList.remove('show');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                overlay.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+            dropdown.classList.remove('show');
+        }
+
+        function closeGame() {
+            overlay.style.display = 'none';
+            frame.src = '';
+            frame.style.transform = "scaleX(1)";
+            isExpanded = false;
+            document.body.style.overflow = 'auto';
+            if (document.fullscreenElement) document.exitFullscreen();
+        }
+
+        // Close dropdown when clicking/tapping elsewhere
+        window.onclick = (e) => {
+            if (!e.target.matches('.menu-btn') && !e.target.matches('.bi-list')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    </script>
+</body>
+</html>
