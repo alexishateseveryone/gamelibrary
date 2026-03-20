@@ -1,0 +1,21 @@
+{
+  "name": "Sanrio Merge Deluxe",
+  "short_name": "SanrioMerge",
+  "description": "Merge cute friends to reach Kuromi!",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff5f8",
+  "theme_color": "#ff6b81",
+  "icons": [
+    {
+      "src": "hellokitty.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "kuromi.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
