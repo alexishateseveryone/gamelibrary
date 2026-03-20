@@ -30,6 +30,21 @@
             transition: transform 0.2s; box-shadow: 0 5px 15px rgba(255, 107, 129, 0.4);
         }
 
+        #gameover-modal {
+            position: absolute; inset: 0; background: rgba(255, 182, 193, 0.95);
+            display: flex; justify-content: center; align-items: center; z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        #gameover-content {
+            background: white; padding: 50px 40px; border-radius: 30px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 5px solid white; width: 280px;
+            animation: popModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popModal { 
+            0% { transform: scale(0.3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         #game-container { 
             position: relative; width: 450px; height: 650px; 
             border: 8px solid var(--pink); border-radius: 20px; 
@@ -38,17 +53,18 @@
             background-size: 60px 60px;
             background-position: 0 0, 30px 30px;
             animation: moveBg 12s linear infinite;
-            box-shadow: 0 20px 50px rgba(255,182,193,0.4); 
+            box-shadow: inset -8px 0 0 rgba(255, 107, 129, 0.4), inset 8px 0 0 rgba(255, 107, 129, 0.4), 0 20px 50px rgba(255,182,193,0.4); 
             overflow: hidden; 
             transition: transform 0.1s ease-out;
+            flex-shrink: 0;
         }
 
-        .shake { animation: shakeEffect 0.2s ease-in-out; }
-        @keyframes shakeEffect { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-5px, 5px); } 50% { transform: translate(5px, -5px); } }
+        .shake { animation: shakeEffect 0.4s ease-in-out; }
+        @keyframes shakeEffect { 0%, 100% { transform: translate(0, 0); } 5% { transform: translate(-15px, 0); } 10% { transform: translate(15px, 0); } 15% { transform: translate(-15px, 0); } 20% { transform: translate(15px, 0); } 25% { transform: translate(-12px, 0); } 30% { transform: translate(12px, 0); } 35% { transform: translate(-10px, 0); } 40% { transform: translate(10px, 0); } 45% { transform: translate(-8px, 0); } 50% { transform: translate(8px, 0); } 55% { transform: translate(-6px, 0); } 60% { transform: translate(6px, 0); } 65% { transform: translate(-4px, 0); } 70% { transform: translate(4px, 0); } 75% { transform: translate(-2px, 0); } 80% { transform: translate(2px, 0); } }
         @keyframes moveBg { from { background-position: 0 0, 30px 30px; } to { background-position: 120px 120px, 150px 150px; } }
         
         #ui-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
-        #score-container { position: absolute; top: 15px; left: 15px; background: var(--soft-white); padding: 10px; border-radius: 12px; border: 2px solid var(--pink); }
+        #score-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: var(--soft-white); padding: 10px; border-radius: 12px; border: 2px solid var(--pink); }
         .value { font-size: 22px; color: var(--dark-pink); }
 
         #announcer {
@@ -79,11 +95,29 @@
     </div>
 </div>
 
+<div id="gameover-modal" style="display: none;">
+    <div id="gameover-content">
+        <h1 style="color: var(--dark-pink); margin-bottom: 15px;">GAME OVER!</h1>
+        <div style="font-size: 14px; color: #888; margin-bottom: 10px;">Your Score</div>
+        <div id="gameover-score" class="value" style="font-size: 48px; margin-bottom: 5px;">0</div>
+        <div style="font-size: 12px; color: #999; margin-bottom: 25px;">Best: <span id="gameover-best">0</span></div>
+        <button class="start-btn" onclick="restartGame()">PLAY AGAIN</button>
+    </div>
+</div>
+
 <div id="game-container">
     <div id="ui-overlay">
         <div id="score-container">
-            <div style="font-size: 11px; color: var(--dark-pink);">SCORE</div><div id="score" class="value">0</div>
-            <div style="font-size: 11px; color: var(--dark-pink); margin-top:4px;">BEST</div><div id="highscore-ui" class="value">0</div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div>
+                    <div style="font-size: 11px; color: var(--dark-pink);">SCORE</div>
+                    <div id="score" class="value">0</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: var(--dark-pink);">BEST</div>
+                    <div id="highscore-ui" class="value">0</div>
+                </div>
+            </div>
         </div>
         <div id="announcer">NICE!</div>
     </div>
@@ -171,15 +205,43 @@ function playSFX(type, pitchShift = 0) {
 
 // --- GAME STATE ---
 let gameStarted = false;
+let gameOver = false;
 let highscore = localStorage.getItem('sanrio_highscore') || 0;
 document.getElementById('modal-highscore').innerText = highscore;
 document.getElementById('highscore-ui').innerText = highscore;
 
 function startGame() {
     gameStarted = true;
+    gameOver = false;
+    score = 0;
+    combo = 0;
+    currentIdx = Math.floor(Math.random()*3);
+    updateScore();
     document.getElementById('start-modal').style.display = 'none';
+    document.getElementById('gameover-modal').style.display = 'none';
     if (AudioCtx.state === 'suspended') AudioCtx.resume();
     bgMusic.play().catch(() => {});
+}
+
+function restartGame() {
+    Composite.clear(engine.world, false);
+    World.add(engine.world, [
+        Bodies.rectangle(225, 660, 450, 60, wallOpts),
+        Bodies.rectangle(-15, 325, 30, 650, wallOpts),
+        Bodies.rectangle(465, 325, 30, 650, wallOpts)
+    ]);
+    startGame();
+}
+
+function gameOverFunc() {
+    gameOver = true;
+    gameStarted = false;
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+    saveHighscore();
+    document.getElementById('gameover-score').innerText = score;
+    document.getElementById('gameover-best').innerText = highscore;
+    document.getElementById('gameover-modal').style.display = 'flex';
 }
 
 // --- MATTER ENGINE ---
@@ -201,15 +263,15 @@ World.add(engine.world, [
 let score = 0, combo = 0, comboTimer = null, currentIdx = 0, mouseX = 225, canDrop = true;
 
 const updateInput = (e) => {
-    if(!gameStarted) return;
+    if(!gameStarted || gameOver) return;
     const rect = canvas.getBoundingClientRect();
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
     mouseX = Math.max(30, Math.min(CONF.width - 30, x * (CONF.width / rect.width)));
 };
 window.addEventListener('mousemove', updateInput);
-window.addEventListener('touchmove', (e) => { if(gameStarted) e.preventDefault(); updateInput(e); }, {passive: false});
-window.addEventListener('mouseup', () => { if(canDrop && gameStarted) drop(); });
-window.addEventListener('touchend', () => { if(canDrop && gameStarted) drop(); });
+window.addEventListener('touchmove', (e) => { if(gameStarted && !gameOver) e.preventDefault(); updateInput(e); }, {passive: false});
+window.addEventListener('mouseup', () => { if(canDrop && gameStarted && !gameOver) drop(); });
+window.addEventListener('touchend', () => { if(canDrop && gameStarted && !gameOver) drop(); });
 
 function drop() {
     const f = CONF.fruits[currentIdx];
@@ -250,6 +312,9 @@ Events.on(engine, 'collisionStart', (event) => {
 
 function updateScore() {
     document.getElementById('score').innerText = score;
+}
+
+function saveHighscore() {
     if (score > highscore) {
         highscore = score;
         localStorage.setItem('sanrio_highscore', highscore);
@@ -268,10 +333,14 @@ function triggerAnnouncer() {
 
 Events.on(render, 'afterRender', () => {
     const ctx = render.context;
-    if (canDrop && gameStarted) drawFruit(ctx, mouseX, 60, CONF.fruits[currentIdx], 0, 0.5, 1);
+    if (canDrop && gameStarted && !gameOver) drawFruit(ctx, mouseX, 60, CONF.fruits[currentIdx], 0, 0.5, 1);
     Composite.allBodies(engine.world).forEach(body => {
         if (body.label === 'fruit') {
-            if (body.plugin.scale < 1) body.plugin.scale += 0.12; 
+            if (body.plugin.scale < 1) body.plugin.scale += 0.12;
+            // Check if fruit crosses the top boundary (gameover condition)
+            if (body.position.y < 0 && gameStarted && !gameOver) {
+                gameOverFunc();
+            }
             drawFruit(ctx, body.position.x, body.position.y, CONF.fruits[body.plugin.level], body.angle, 1, body.plugin.scale);
         }
     });
