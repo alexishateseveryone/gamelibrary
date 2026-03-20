@@ -46,7 +46,12 @@
         }
 
         #game-container { 
-            position: relative; width: 450px; height: 650px; 
+            position: relative; 
+            width: 90vmin; 
+            height: 130vmin; 
+            max-width: 450px; 
+            max-height: 650px;
+            aspect-ratio: 450 / 650;
             border: 8px solid var(--pink); border-radius: 20px; 
             background-color: white;
             background-image: radial-gradient(var(--pink) 15%, transparent 16%), radial-gradient(var(--pink) 15%, transparent 16%);
@@ -145,6 +150,15 @@ const CONF = {
     ]
 };
 
+// Get actual container dimensions
+function getContainerDimensions() {
+    const container = document.getElementById('game-container');
+    return {
+        width: container.clientWidth,
+        height: container.clientHeight
+    };
+}
+
 const images = {};
 let loadedCount = 0;
 
@@ -215,6 +229,7 @@ function startGame() {
     gameOver = false;
     score = 0;
     combo = 0;
+    mouseX = CONF.width / 2;
     currentIdx = Math.floor(Math.random()*3);
     updateScore();
     document.getElementById('start-modal').style.display = 'none';
@@ -225,10 +240,11 @@ function startGame() {
 
 function restartGame() {
     Composite.clear(engine.world, false);
+    const wallOpts = { isStatic: true, friction: 0.2, render: { visible: false } };
     World.add(engine.world, [
-        Bodies.rectangle(225, 660, 450, 60, wallOpts),
-        Bodies.rectangle(-15, 325, 30, 650, wallOpts),
-        Bodies.rectangle(465, 325, 30, 650, wallOpts)
+        Bodies.rectangle(CONF.width / 2, CONF.height - 10, CONF.width, 60, wallOpts),
+        Bodies.rectangle(-15, CONF.height / 2, 30, CONF.height, wallOpts),
+        Bodies.rectangle(CONF.width + 15, CONF.height / 2, 30, CONF.height, wallOpts)
     ]);
     startGame();
 }
@@ -248,19 +264,33 @@ function gameOverFunc() {
 const { Engine, Render, Runner, World, Bodies, Events, Composite } = Matter;
 const engine = Engine.create();
 const canvas = document.getElementById('gameCanvas');
-const render = Render.create({
-    canvas: canvas, engine: engine,
-    options: { width: CONF.width, height: CONF.height, wireframes: false, background: 'transparent' }
-});
 
-const wallOpts = { isStatic: true, friction: 0.2, render: { visible: false } };
-World.add(engine.world, [
-    Bodies.rectangle(225, 660, 450, 60, wallOpts),
-    Bodies.rectangle(-15, 325, 30, 650, wallOpts),
-    Bodies.rectangle(465, 325, 30, 650, wallOpts)
-]);
+function initializeGame() {
+    const dims = getContainerDimensions();
+    CONF.width = dims.width;
+    CONF.height = dims.height;
+    
+    const render = Render.create({
+        canvas: canvas, engine: engine,
+        options: { width: CONF.width, height: CONF.height, wireframes: false, background: 'transparent' }
+    });
+    
+    const wallOpts = { isStatic: true, friction: 0.2, render: { visible: false } };
+    World.add(engine.world, [
+        Bodies.rectangle(CONF.width / 2, CONF.height - 10, CONF.width, 60, wallOpts),
+        Bodies.rectangle(-15, CONF.height / 2, 30, CONF.height, wallOpts),
+        Bodies.rectangle(CONF.width + 15, CONF.height / 2, 30, CONF.height, wallOpts)
+    ]);
+    
+    Runner.run(Runner.create(), engine);
+    Render.run(render);
+    
+    return render;
+}
 
-let score = 0, combo = 0, comboTimer = null, currentIdx = 0, mouseX = 225, canDrop = true;
+let render = initializeGame();
+
+let score = 0, combo = 0, comboTimer = null, currentIdx = 0, mouseX = 0, canDrop = true;
 
 const updateInput = (e) => {
     if(!gameStarted || gameOver) return;
@@ -268,6 +298,7 @@ const updateInput = (e) => {
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
     mouseX = Math.max(30, Math.min(CONF.width - 30, x * (CONF.width / rect.width)));
 };
+
 window.addEventListener('mousemove', updateInput);
 window.addEventListener('touchmove', (e) => { if(gameStarted && !gameOver) e.preventDefault(); updateInput(e); }, {passive: false});
 window.addEventListener('mouseup', () => { if(canDrop && gameStarted && !gameOver) drop(); });
@@ -344,6 +375,16 @@ Events.on(render, 'afterRender', () => {
             drawFruit(ctx, body.position.x, body.position.y, CONF.fruits[body.plugin.level], body.angle, 1, body.plugin.scale);
         }
     });
+});
+
+// Handle window resize to adjust basket responsively
+window.addEventListener('resize', () => {
+    const dims = getContainerDimensions();
+    if (CONF.width !== dims.width || CONF.height !== dims.height) {
+        CONF.width = dims.width;
+        CONF.height = dims.height;
+        Render.setSize(render, CONF.width, CONF.height);
+    }
 });
 
 function drawFruit(ctx, x, y, data, angle, alpha, s) {
